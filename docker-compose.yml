@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      REDIS_HOST: redis
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT}/${REDIS_DB}
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT}/1
+    volumes:
+      - .:/app
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  backend:
+    external: true
+    name: ${BACKEND_DOCKER_NETWORK:-backend}

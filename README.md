@@ -32,6 +32,21 @@ Required variables:
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD`
 - `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`
 
+If Redis is running on your host machine, set:
+- `REDIS_HOST=localhost`
+- `CELERY_BROKER_URL=redis://:your_password@localhost:6379/0`
+- `CELERY_RESULT_BACKEND=redis://:your_password@localhost:6379/1`
+
+If Redis is running in Docker on a network (e.g. service name `redis`), keep the `.env` values as localhost for your local Django API, and Docker Compose will override the worker to use `redis` as the host automatically.
+
+If PostgreSQL is running in Docker on a network (e.g. service name `postgres`), keep `.env` as localhost for your local Django API, and Docker Compose will override the worker to use `postgres` as the host automatically.
+
+Ensure the Celery container is attached to the same Docker network as Redis/Postgres. By default this repo expects an external network named `backend`. If your Redis/Postgres compose file creates a different network name, set `BACKEND_DOCKER_NETWORK` when running Docker Compose, for example:
+
+```bash
+BACKEND_DOCKER_NETWORK=yourproject_backend docker compose up --build celery_worker
+```
+
 ## Run Django API Locally
 
 ```bash
@@ -40,6 +55,20 @@ python manage.py runserver
 ```
 
 This uses `sourceright.settings.local` by default.
+
+## Django Shell Plus
+
+Install dependencies (if not already):
+
+```bash
+uv pip install -r requirements.txt
+```
+
+Run:
+
+```bash
+python manage.py shell_plus
+```
 
 ## Start Celery Worker via Docker
 

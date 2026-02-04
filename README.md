@@ -97,6 +97,15 @@ Expected result: the worker logs a successful task execution and returns `"ok"`.
 
 ```
 .
+├── shared/
+│   └── logging/
+│       ├── __init__.py
+│       ├── config.py
+│       ├── context.py
+│       ├── middleware.py
+│       ├── filters.py
+│       ├── formatters.py
+│       └── logger.py
 ├── docker/
 │   └── celery-entrypoint.sh
 ├── sourceright/
@@ -127,3 +136,75 @@ Expected result: the worker logs a successful task execution and returns `"ok"`.
 - Redis is used for Django cache, Celery broker, and Celery result backend.
 - `django_celery_results` and `django_celery_beat` are installed for extensibility.
 - `production.py` is a placeholder for future environment hardening.
+
+## Logging
+
+The backend uses a single, production-grade logging system across Django and Celery. Logs are plain text and optimized for `tail -f`, `grep`, and `awk`.
+
+Log format:
+
+```
+2026-02-03 12:34:56 | INFO | log_id=abc123 | file=invoice_service.py:87 | func=create_invoice | msg=Invoice created successfully
+```
+
+Log files:
+- `logs/app.log` for Django and application logs
+- `logs/celery.log` for Celery worker and task logs
+- `logs/errors.log` for errors with stack traces
+
+log_id lifecycle:
+- A `log_id` is created per request by middleware.
+- If a request provides `X-Log-Id`, it is reused.
+- The `log_id` is propagated to Celery tasks via message headers.
+- Retries keep the same `log_id`.
+- Standalone tasks generate a new `log_id`.
+
+Environment configuration:
+- `LOG_LEVEL` (default `INFO`)
+- `LOG_DIR` (default `logs`)
+- `LOG_MAX_BYTES` (default `10485760`)
+- `LOG_BACKUP_COUNT` (default `10`)
+- `ENABLE_CONSOLE_LOGGING` (default `true`)
+
+Example usage in a Django view:
+
+```python
+from django.http import JsonResponse
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
+
+def example_view(request):
+    logger.info("Example view hit", extra={"path": request.path})
+    return JsonResponse({"status": "ok"})
+```
+
+Example usage in a service:
+
+```python
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
+
+def create_invoice(invoice_id, amount):
+    logger.info("Invoice created", extra={"invoice_id": invoice_id, "amount": amount})
+```
+
+Example usage in a Celery task:
+
+```python
+from celery import shared_task
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=5)
+def health_check(self):
+    logger.info("Health check task started")
+    return "ok"
+```
+
+Debugging tips:
+1. Tail application logs: `tail -f logs/app.log`
+2. Tail Celery logs: `tail -f logs/celery.log`
+3. Find a trace: `grep "log_id=<value>" logs/app.log logs/celery.log`

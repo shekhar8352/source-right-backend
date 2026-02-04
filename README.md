@@ -208,3 +208,11 @@ Debugging tips:
 1. Tail application logs: `tail -f logs/app.log`
 2. Tail Celery logs: `tail -f logs/celery.log`
 3. Find a trace: `grep "log_id=<value>" logs/app.log logs/celery.log`
+
+## Health Checks
+
+Health check endpoints live under `health/`:
+- `GET /health/live` for liveness (fast, no external dependencies).
+- `GET /health/ready` for readiness (checks database + Redis).
+
+Readiness response includes per-check status and timing, and returns `503` if any check fails.

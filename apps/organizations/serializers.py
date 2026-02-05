@@ -66,3 +66,13 @@ class OrganizationResponseSerializer(serializers.ModelSerializer):
 class OrganizationInviteAcceptResponseSerializer(serializers.Serializer):
     status = serializers.CharField()
     org_id = serializers.CharField()
+
+
+class OrganizationUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField(allow_blank=True)
+    last_name = serializers.CharField(allow_blank=True)
+    is_active = serializers.BooleanField()
+    roles = serializers.ListField(child=serializers.CharField())

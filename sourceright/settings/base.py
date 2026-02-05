@@ -62,6 +62,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.organizations.middleware.OrganizationContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -144,3 +145,7 @@ LOGGING = build_logging_config(base_dir=BASE_DIR)
 ALLOWED_COUNTRIES = parse_csv_env("ALLOWED_COUNTRIES")
 ALLOWED_CURRENCIES = parse_csv_env("ALLOWED_CURRENCIES")
 DEFAULT_BASE_CURRENCY = os.environ.get("DEFAULT_BASE_CURRENCY", "").strip().upper()
+
+ORG_CONTEXT_HEADER = os.environ.get("ORG_CONTEXT_HEADER", "X-Org-Id")
+ORG_CONTEXT_ENFORCED_PREFIXES = ["/api/"]
+ORG_CONTEXT_EXEMPT_PATHS = ["/api/organizations"]

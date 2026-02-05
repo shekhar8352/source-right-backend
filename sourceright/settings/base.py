@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_extensions",
     "rest_framework",
+    "drf_spectacular",
     "django_celery_results",
     "django_celery_beat",
     "apps.accounts",
@@ -146,6 +147,16 @@ AUTH_USER_MODEL = "accounts.User"
 
 LOGGING = build_logging_config(base_dir=BASE_DIR)
 
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SourceRight API",
+    "DESCRIPTION": "SourceRight API documentation",
+    "VERSION": "0.1.0",
+}
+
 ALLOWED_COUNTRIES = parse_csv_env("ALLOWED_COUNTRIES")
 ALLOWED_CURRENCIES = parse_csv_env("ALLOWED_CURRENCIES")
 DEFAULT_BASE_CURRENCY = os.environ.get("DEFAULT_BASE_CURRENCY", "").strip().upper()
@@ -157,6 +168,8 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/organizations/invites/accept",
     "/api/health/live",
     "/api/health/ready",
+    "/api/schema",
+    "/api/docs",
 ]
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@sourceright.local")

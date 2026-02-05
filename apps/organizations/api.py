@@ -5,15 +5,15 @@ from rest_framework.response import Response
 
 from shared.logging import get_logger
 
-from .domain.enums import RoleType
-from .serializers import (
-    OrganizationCreateSerializer,
+from apps.access_control.domain.enums import RoleType
+from apps.access_control.serializers import (
     OrganizationInviteAcceptSerializer,
     OrganizationInviteCreateSerializer,
     OrganizationInviteResponseSerializer,
-    OrganizationResponseSerializer,
 )
-from .services.invite_service import accept_invite, invite_user
+from apps.access_control.services.invite_service import accept_invite, invite_user
+
+from .serializers import OrganizationCreateSerializer, OrganizationResponseSerializer
 from .services.organization_service import create_organization
 
 logger = get_logger(__name__)

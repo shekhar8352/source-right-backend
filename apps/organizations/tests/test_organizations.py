@@ -3,9 +3,10 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.organizations.domain.enums import RoleType
-from apps.organizations.models import Organization, UserRole
-from apps.organizations.repositories.user_role_repository import UserRoleRepository
+from apps.access_control.domain.enums import RoleType
+from apps.access_control.models import UserRole
+from apps.access_control.repositories.user_role_repository import UserRoleRepository
+from apps.organizations.models import Organization
 from apps.organizations.services.organization_service import create_organization
 
 

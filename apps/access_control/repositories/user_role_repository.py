@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from apps.organizations.models import Organization
+
 from ..domain.enums import RoleType
-from ..models import Organization, UserRole
+from ..models import UserRole
 
 
 class UserRoleRepository:

@@ -5,7 +5,7 @@ from typing import Iterable
 from django.conf import settings
 from django.http import JsonResponse
 
-from .models import UserRole
+from apps.access_control.models import UserRole
 
 
 def _normalize_path(path: str) -> str:

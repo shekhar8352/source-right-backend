@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from django.db import transaction
 
-from ..domain.enums import RoleType
+from apps.access_control.domain.enums import RoleType
+from apps.access_control.repositories.user_role_repository import UserRoleRepository
+
 from ..repositories.organization_repository import OrganizationRepository
-from ..repositories.user_role_repository import UserRoleRepository
 
 
 def create_organization(*, creator, name: str, country: str, base_currency: str):

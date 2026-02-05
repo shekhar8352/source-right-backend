@@ -3,8 +3,8 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.organizations.domain.enums import InviteStatus, RoleType
-from apps.organizations.models import OrganizationInvite, UserRole
+from apps.access_control.domain.enums import InviteStatus, RoleType
+from apps.access_control.models import OrganizationInvite, UserRole
 from apps.organizations.services.organization_service import create_organization
 
 

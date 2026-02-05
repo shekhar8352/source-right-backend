@@ -4,9 +4,10 @@ import secrets
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+
+from apps.notifications.services.email_service import send_email
 
 from ..domain.enums import InviteStatus
 from ..models import OrganizationInvite, UserRole
@@ -41,8 +42,7 @@ def send_invite_email(*, email: str, org_name: str, token: str) -> None:
             f"You've been invited to join {org_name}. "
             f"Use this invite token to accept: {token}"
         )
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@sourceright.local")
-    send_mail(subject, message, from_email, [email])
+    send_email(subject=subject, message=message, recipients=[email])
 
 
 def invite_user(*, org, email: str, role: str, invited_by) -> OrganizationInvite:

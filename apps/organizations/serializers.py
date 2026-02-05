@@ -16,6 +16,7 @@ class OrganizationCreateSerializer(serializers.Serializer):
     name = serializers.CharField(allow_blank=False, trim_whitespace=True)
     country = serializers.CharField(allow_blank=False, trim_whitespace=True)
     base_currency = serializers.CharField(allow_blank=False, trim_whitespace=True, required=False)
+    created_by_id = serializers.IntegerField(required=False, write_only=True)
 
     def validate_name(self, value: str) -> str:
         normalized = value.strip()

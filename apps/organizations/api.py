@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
+from django.contrib.auth import get_user_model
 
 from shared.logging import get_logger
 
@@ -22,22 +23,39 @@ from .serializers import (
 from .services.organization_service import create_organization
 
 logger = get_logger(__name__)
+User = get_user_model()
 
 
 @extend_schema(
     summary="Create organization",
-    description="Create a new organization for the authenticated user.",
+    description="Create a new organization. If unauthenticated, provide created_by_id.",
     request=OrganizationCreateSerializer,
     responses={201: OrganizationResponseSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def create_organization_view(request):
-    """Create a new organization for the authenticated user."""
+    """Create a new organization."""
     serializer = OrganizationCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    organization = create_organization(creator=request.user, **serializer.validated_data)
+    created_by_id = serializer.validated_data.pop("created_by_id", None)
+    creator = request.user if request.user.is_authenticated else None
+    if creator is None:
+        if not created_by_id:
+            return Response(
+                {"detail": "created_by_id is required for unauthenticated requests."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            creator = User.objects.get(id=created_by_id)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found for created_by_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    organization = create_organization(creator=creator, **serializer.validated_data)
 
     logger.info(
         "Organization created",

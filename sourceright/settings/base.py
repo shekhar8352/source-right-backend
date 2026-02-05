@@ -168,6 +168,7 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/organizations/invites/accept",
     "/api/health/live",
     "/api/health/ready",
+    "/api/accounts/register",
     "/api/schema",
     "/api/docs",
 ]

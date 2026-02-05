@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django_celery_results",
     "django_celery_beat",
     "apps.core",
+    "apps.organizations",
     "apps.healthcheck",
 ]
 

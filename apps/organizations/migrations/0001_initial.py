@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 
-import apps.core.domain.identifiers
+import apps.organizations.domain.identifiers
 
 
 class Migration(migrations.Migration):
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                         serialize=False,
                         editable=False,
                         max_length=40,
-                        default=apps.core.domain.identifiers.generate_org_id,
+                        default=apps.organizations.domain.identifiers.generate_org_id,
                     ),
                 ),
                 ("name", models.CharField(max_length=255)),
@@ -81,7 +81,7 @@ class Migration(migrations.Migration):
                         db_column="org_id",
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="user_roles",
-                        to="core.organization",
+                        to="organizations.organization",
                         to_field="org_id",
                     ),
                 ),

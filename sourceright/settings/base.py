@@ -152,7 +152,12 @@ DEFAULT_BASE_CURRENCY = os.environ.get("DEFAULT_BASE_CURRENCY", "").strip().uppe
 
 ORG_CONTEXT_HEADER = os.environ.get("ORG_CONTEXT_HEADER", "X-Org-Id")
 ORG_CONTEXT_ENFORCED_PREFIXES = ["/api/"]
-ORG_CONTEXT_EXEMPT_PATHS = ["/api/organizations", "/api/organizations/invites/accept"]
+ORG_CONTEXT_EXEMPT_PATHS = [
+    "/api/organizations",
+    "/api/organizations/invites/accept",
+    "/api/health/live",
+    "/api/health/ready",
+]
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@sourceright.local")
 INVITE_ACCEPT_URL_BASE = os.environ.get("INVITE_ACCEPT_URL_BASE", "").strip()

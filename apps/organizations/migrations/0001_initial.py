@@ -70,7 +70,10 @@ class Migration(migrations.Migration):
                 (
                     "role",
                     models.CharField(
-                        choices=[("ORG_ADMIN", "Organization Admin")],
+                        choices=[
+                            ("ORG_ADMIN", "Organization Admin"),
+                            ("ORG_MEMBER", "Organization Member"),
+                        ],
                         max_length=40,
                     ),
                 ),

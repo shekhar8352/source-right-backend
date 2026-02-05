@@ -24,21 +24,21 @@ class OrganizationContextMiddlewareTests(TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_missing_org_context_rejected(self):
-        self.client.force_authenticate(user=self.user)
+        self.assertTrue(self.client.login(username="admin", password="pass1234"))
 
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 403)
 
     def test_invalid_org_context_rejected(self):
-        self.client.force_authenticate(user=self.user)
+        self.assertTrue(self.client.login(username="admin", password="pass1234"))
 
         response = self.client.get(self.url, HTTP_X_ORG_ID="org_fake")
 
         self.assertEqual(response.status_code, 403)
 
     def test_valid_org_context_allows_request(self):
-        self.client.force_authenticate(user=self.user)
+        self.assertTrue(self.client.login(username="admin", password="pass1234"))
         org = create_organization(
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )

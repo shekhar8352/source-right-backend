@@ -20,8 +20,9 @@ class OrganizationCreationTests(TestCase):
             username="admin", email="admin@example.com", password="pass1234"
         )
         self.api_client = APIClient()
-        self.api_client.force_authenticate(user=self.user)
         self.url = reverse("create-organization")
+
+        self.assertTrue(self.api_client.login(username="admin", password="pass1234"))
 
     def test_create_organization_success(self):
         payload = {"name": "Acme Corp", "country": "IN", "base_currency": "INR"}

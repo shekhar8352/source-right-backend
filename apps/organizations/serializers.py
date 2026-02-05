@@ -61,3 +61,7 @@ class OrganizationResponseSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
+
+class OrganizationInviteAcceptResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    org_id = serializers.CharField()

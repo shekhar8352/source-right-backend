@@ -1,8 +1,8 @@
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema
 
 from shared.logging import get_logger
 
@@ -14,18 +14,15 @@ from apps.access_control.serializers import (
 )
 from apps.access_control.services.invite_service import accept_invite, invite_user
 
-from .serializers import OrganizationCreateSerializer, OrganizationResponseSerializer
+from .serializers import (
+    OrganizationCreateSerializer,
+    OrganizationInviteAcceptResponseSerializer,
+    OrganizationResponseSerializer,
+)
 from .services.organization_service import create_organization
 
 logger = get_logger(__name__)
 
-OrganizationInviteAcceptResponseSerializer = inline_serializer(
-    name="OrganizationInviteAcceptResponse",
-    fields={
-        "status": serializers.CharField(),
-        "org_id": serializers.CharField(),
-    },
-)
 
 @extend_schema(
     summary="Create organization",

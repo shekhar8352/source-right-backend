@@ -2,31 +2,16 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import serializers, status
+from rest_framework import status
 from drf_spectacular.utils import extend_schema
 
 from shared.logging import get_logger
 
 from .services import check_database, check_redis
+from .serializers import HealthLiveSerializer, HealthReadySerializer
 
 logger = get_logger(__name__)
 
-class HealthLiveSerializer(serializers.Serializer):
-    status = serializers.CharField()
-    timestamp = serializers.DateTimeField()
-
-
-class HealthCheckResultSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    ok = serializers.BooleanField()
-    duration_ms = serializers.IntegerField()
-    error = serializers.CharField(required=False, allow_blank=True)
-
-
-class HealthReadySerializer(serializers.Serializer):
-    status = serializers.CharField()
-    timestamp = serializers.DateTimeField()
-    checks = HealthCheckResultSerializer(many=True)
 
 @extend_schema(
     summary="Health live check",

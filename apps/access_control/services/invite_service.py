@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import secrets
 
 from django.conf import settings
@@ -20,6 +21,21 @@ def generate_invite_token() -> str:
 
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def _base_username_from_email(email: str) -> str:
+    prefix = email.split("@")[0]
+    cleaned = re.sub(r"[^a-zA-Z0-9_]", "_", prefix).strip("_")
+    return cleaned or "user"
+
+
+def _generate_unique_username(user_model, base: str) -> str:
+    candidate = base
+    counter = 1
+    while user_model.objects.filter(username=candidate).exists():
+        candidate = f"{base}{counter}"
+        counter += 1
+    return candidate
 
 
 def _build_invite_link(token: str) -> str | None:
@@ -82,8 +98,11 @@ def accept_invite(*, token: str, password: str) -> OrganizationInvite:
     with transaction.atomic():
         user = UserModel.objects.filter(email__iexact=normalized_email).first()
         if user is None:
+            username = _generate_unique_username(
+                UserModel, _base_username_from_email(normalized_email)
+            )
             user = UserModel.objects.create_user(
-                username=normalized_email.split("@")[0],
+                username=username,
                 email=normalized_email,
                 password=password,
             )

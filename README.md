@@ -78,6 +78,33 @@ docker compose up --build celery_worker
 
 The worker reads `.env` and connects to external Redis and PostgreSQL.
 
+## Run Tests
+
+Run the full test suite:
+
+```bash
+python manage.py test
+```
+
+Run tests for a single app:
+
+```bash
+python manage.py test apps.organizations
+python manage.py test apps.access_control
+```
+
+Run a single test module:
+
+```bash
+python manage.py test apps.access_control.tests.test_invites
+```
+
+Verbose output:
+
+```bash
+python manage.py test -v 2
+```
+
 ## Test the Celery Task
 
 In another shell:

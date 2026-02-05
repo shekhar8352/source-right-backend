@@ -28,6 +28,11 @@ def parse_bool(value: str) -> bool:
     raise ValueError(f"Invalid boolean value: {value}")
 
 
+def parse_csv_env(name: str) -> list[str]:
+    raw = os.environ.get(name, "")
+    return [item.strip().upper() for item in raw.split(",") if item.strip()]
+
+
 SECRET_KEY = require_env("DJANGO_SECRET_KEY")
 DEBUG = parse_bool(require_env("DJANGO_DEBUG"))
 ALLOWED_HOSTS = [
@@ -134,3 +139,7 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = build_logging_config(base_dir=BASE_DIR)
+
+ALLOWED_COUNTRIES = parse_csv_env("ALLOWED_COUNTRIES")
+ALLOWED_CURRENCIES = parse_csv_env("ALLOWED_CURRENCIES")
+DEFAULT_BASE_CURRENCY = os.environ.get("DEFAULT_BASE_CURRENCY", "").strip().upper()

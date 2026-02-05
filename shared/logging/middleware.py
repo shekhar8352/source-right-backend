@@ -9,14 +9,16 @@ from .logger import get_logger
 
 
 class LoggingMiddleware:
+    sync_capable = True
+    async_capable = True
     def __init__(self, get_response: Callable):
         self.get_response = get_response
         self.logger = get_logger("request")
         self._is_async = iscoroutinefunction(get_response)
 
-    async def __call__(self, request: HttpRequest) -> HttpResponse:
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         if self._is_async:
-            return await self._call_async(request)
+            return self._call_async(request)
         return self._call_sync(request)
 
     def _set_context(self, request: HttpRequest):

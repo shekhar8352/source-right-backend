@@ -153,7 +153,7 @@ LOGGING = build_logging_config(base_dir=BASE_DIR)
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "apps.accounts.authentication.OrgTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
@@ -186,3 +186,4 @@ INTERNAL_API_PREFIXES = ["/api/internal/"]
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@sourceright.local")
 INVITE_ACCEPT_URL_BASE = os.environ.get("INVITE_ACCEPT_URL_BASE", "").strip()
+AUTH_TOKEN_TTL_SECONDS = int(os.environ.get("AUTH_TOKEN_TTL_SECONDS", "3600"))

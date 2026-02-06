@@ -4,9 +4,11 @@ from typing import Iterable
 
 from django.conf import settings
 from django.http import JsonResponse
+from rest_framework.exceptions import AuthenticationFailed
 
 from apps.access_control.models import UserRole
 from apps.access_control.domain.enums import RoleType
+from apps.accounts.authentication import OrgTokenAuthentication
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
@@ -49,40 +51,58 @@ class OrganizationContextMiddleware:
             return self.get_response(request)
 
         if not request.user.is_authenticated:
-            return JsonResponse(
-                {"detail": "Authentication credentials were not provided."}, status=401
-            )
+            token_auth = OrgTokenAuthentication()
+            try:
+                auth_result = token_auth.authenticate(request)
+            except AuthenticationFailed as exc:
+                return JsonResponse({"detail": str(exc.detail)}, status=401)
+            if auth_result:
+                request.user, request.auth = auth_result
+            else:
+                return JsonResponse(
+                    {"detail": "Authentication credentials were not provided."}, status=401
+                )
 
         org_id = _get_org_id_from_request(request)
         if not org_id:
+            org_id = getattr(request, "org_id", None)
+        elif getattr(request, "org_id", None) and org_id != request.org_id:
+            return JsonResponse(
+                {"detail": "Organization context does not match token."}, status=403
+            )
+        if not org_id:
             return JsonResponse({"detail": "Organization context is required."}, status=403)
 
-        membership = (
-            UserRole.objects.select_related("org")
-            .filter(user=request.user, org_id=org_id)
-            .first()
-        )
-        if membership is None:
-            return JsonResponse(
-                {"detail": "User does not belong to the specified organization."},
-                status=403,
+        membership_role = None
+        if getattr(request, "organization", None) is not None and request.org_id == org_id:
+            membership_role = request.organization_role
+        else:
+            membership = (
+                UserRole.objects.select_related("org")
+                .filter(user=request.user, org_id=org_id)
+                .first()
             )
+            if membership is None:
+                return JsonResponse(
+                    {"detail": "User does not belong to the specified organization."},
+                    status=403,
+                )
+            request.org_id = org_id
+            request.organization = membership.org
+            request.organization_role = membership.role
+            membership_role = membership.role
 
-        if self._is_internal(request.path) and membership.role == RoleType.VENDOR:
+        if self._is_internal(request.path) and membership_role == RoleType.VENDOR:
             return JsonResponse(
                 {"detail": "Vendor role cannot access internal APIs."},
                 status=403,
             )
 
-        if membership.role == RoleType.VIEWER and request.method not in SAFE_METHODS:
+        if membership_role == RoleType.VIEWER and request.method not in SAFE_METHODS:
             return JsonResponse(
                 {"detail": "Viewer role cannot mutate data."},
                 status=403,
             )
-
-        request.org_id = org_id
-        request.organization = membership.org
-        request.organization_role = membership.role
 
         return self.get_response(request)
 

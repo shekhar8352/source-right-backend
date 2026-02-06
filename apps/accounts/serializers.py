@@ -58,6 +58,7 @@ class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
     email = serializers.EmailField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True, allow_blank=False)
+    org_id = serializers.CharField(required=False, allow_blank=False, trim_whitespace=True)
 
     def validate(self, attrs):
         if not attrs.get("username") and not attrs.get("email"):
@@ -69,3 +70,6 @@ class UserLoginSerializer(serializers.Serializer):
 
 class TokenResponseSerializer(serializers.Serializer):
     token = serializers.CharField()
+    user_id = serializers.IntegerField()
+    org_id = serializers.CharField()
+    role = serializers.CharField()

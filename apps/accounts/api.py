@@ -4,13 +4,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
 from drf_spectacular.utils import extend_schema
 
 from shared.logging import get_logger
 
 from apps.organizations.models import Organization
 from apps.access_control.repositories.user_role_repository import UserRoleRepository
+from apps.access_control.models import UserRole
 
 from .serializers import (
     TokenResponseSerializer,
@@ -18,6 +18,7 @@ from .serializers import (
     UserLoginSerializer,
     UserResponseSerializer,
 )
+from .services.auth_token_service import issue_token
 
 logger = get_logger(__name__)
 User = get_user_model()
@@ -95,5 +96,53 @@ def login_view(request):
     if not user.is_active:
         return Response({"detail": "User is inactive."}, status=status.HTTP_403_FORBIDDEN)
 
-    token, _ = Token.objects.get_or_create(user=user)
-    return Response({"token": token.key}, status=status.HTTP_200_OK)
+    org_id = serializer.validated_data.get("org_id")
+    organization = None
+    membership_role = None
+    if org_id:
+        try:
+            organization = Organization.objects.get(org_id=org_id)
+        except Organization.DoesNotExist:
+            return Response(
+                {"detail": "Organization not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        membership_role = (
+            UserRole.objects.filter(user=user, org=organization)
+            .values_list("role", flat=True)
+            .first()
+        )
+        if membership_role is None:
+            return Response(
+                {"detail": "User does not belong to the specified organization."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+    else:
+        memberships = list(
+            UserRole.objects.select_related("org")
+            .filter(user=user)
+            .order_by("-assigned_at")[:2]
+        )
+        if not memberships:
+            return Response(
+                {"detail": "User does not belong to any organization."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if len(memberships) > 1:
+            return Response(
+                {"detail": "Multiple organizations found. Provide org_id to select one."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        membership = memberships[0]
+        organization = membership.org
+        membership_role = membership.role
+
+    token = issue_token(user_id=user.id, org_id=organization.org_id, role=membership_role)
+    response = {
+        "token": token,
+        "user_id": user.id,
+        "org_id": organization.org_id,
+        "role": membership_role,
+    }
+    return Response(response, status=status.HTTP_200_OK)

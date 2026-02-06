@@ -56,7 +56,9 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.access_control",
     "apps.core",
+    "apps.invoices",
     "apps.organizations",
+    "apps.vendors",
     "apps.healthcheck",
 ]
 

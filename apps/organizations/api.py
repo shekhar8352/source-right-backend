@@ -5,6 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth import get_user_model
+from django.db import transaction, IntegrityError
 
 from shared.logging import get_logger
 
@@ -24,7 +25,7 @@ from .serializers import (
     OrganizationUserSerializer,
 )
 from .services.organization_service import create_organization
-from .utils import build_user_payload, get_user_roles, is_last_active_admin, require_org_admin
+from .utils import build_user_payload, get_user_role, is_last_active_admin, require_org_admin
 
 logger = get_logger(__name__)
 User = get_user_model()
@@ -32,7 +33,10 @@ User = get_user_model()
 
 @extend_schema(
     summary="Create organization",
-    description="Create a new organization. If unauthenticated, provide created_by_id.",
+    description=(
+        "Create a new organization. If unauthenticated, provide created_by_id or "
+        "creator credentials (creator_username, creator_email, creator_password)."
+    ),
     request=OrganizationCreateSerializer,
     responses={201: OrganizationResponseSerializer},
 )
@@ -44,22 +48,52 @@ def create_organization_view(request):
     serializer.is_valid(raise_exception=True)
 
     created_by_id = serializer.validated_data.pop("created_by_id", None)
+    creator_username = serializer.validated_data.pop("creator_username", None)
+    creator_email = serializer.validated_data.pop("creator_email", None)
+    creator_password = serializer.validated_data.pop("creator_password", None)
+    creator_first_name = serializer.validated_data.pop("creator_first_name", "")
+    creator_last_name = serializer.validated_data.pop("creator_last_name", "")
     creator = request.user if request.user.is_authenticated else None
+    organization = None
     if creator is None:
         if not created_by_id:
-            return Response(
-                {"detail": "created_by_id is required for unauthenticated requests."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        try:
-            creator = User.objects.get(id=created_by_id)
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found for created_by_id."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            if not creator_username or not creator_email or not creator_password:
+                return Response(
+                    {
+                        "detail": "created_by_id or creator credentials are required "
+                        "for unauthenticated requests."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                with transaction.atomic():
+                    creator = User(
+                        username=creator_username,
+                        email=creator_email,
+                        first_name=creator_first_name,
+                        last_name=creator_last_name,
+                    )
+                    creator.set_password(creator_password)
+                    creator.save()
+                    organization = create_organization(
+                        creator=creator, **serializer.validated_data
+                    )
+            except IntegrityError:
+                return Response(
+                    {"detail": "Username or email already exists."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            try:
+                creator = User.objects.get(id=created_by_id)
+            except User.DoesNotExist:
+                return Response(
+                    {"detail": "User not found for created_by_id."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-    organization = create_organization(creator=creator, **serializer.validated_data)
+    if organization is None:
+        organization = create_organization(creator=creator, **serializer.validated_data)
 
     logger.info(
         "Organization created",
@@ -90,13 +124,11 @@ def list_organization_users_view(request):
     )
 
     user_map = {}
-    for role in roles_qs:
-        user = role.user
-        entry = user_map.get(user.id)
-        if entry is None:
-            entry = build_user_payload(user, [])
-            user_map[user.id] = entry
-        entry["roles"].append(role.role)
+    for membership in roles_qs:
+        user = membership.user
+        if user.id in user_map:
+            continue
+        user_map[user.id] = build_user_payload(user, membership.role)
 
     users = list(user_map.values())
 
@@ -138,8 +170,8 @@ def deactivate_organization_user_view(request, user_id: int):
         user.is_active = False
         user.save(update_fields=["is_active"])
 
-    roles = get_user_roles(request.organization.org_id, user.id)
-    serializer = OrganizationUserSerializer(build_user_payload(user, roles))
+    role = get_user_role(request.organization.org_id, user.id)
+    serializer = OrganizationUserSerializer(build_user_payload(user, role))
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -169,8 +201,8 @@ def reactivate_organization_user_view(request, user_id: int):
         user.is_active = True
         user.save(update_fields=["is_active"])
 
-    roles = get_user_roles(request.organization.org_id, user.id)
-    serializer = OrganizationUserSerializer(build_user_payload(user, roles))
+    role = get_user_role(request.organization.org_id, user.id)
+    serializer = OrganizationUserSerializer(build_user_payload(user, role))
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @extend_schema(

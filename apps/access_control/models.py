@@ -39,8 +39,8 @@ class UserRole(models.Model):
         db_table = "user_roles"
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "org", "role"],
-                name="uniq_user_org_role",
+                fields=["user", "org"],
+                name="uniq_user_org",
             )
         ]
         indexes = [

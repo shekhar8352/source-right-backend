@@ -17,6 +17,17 @@ class OrganizationCreateSerializer(serializers.Serializer):
     country = serializers.CharField(allow_blank=False, trim_whitespace=True)
     base_currency = serializers.CharField(allow_blank=False, trim_whitespace=True, required=False)
     created_by_id = serializers.IntegerField(required=False, write_only=True)
+    creator_username = serializers.CharField(
+        required=False, allow_blank=False, trim_whitespace=True
+    )
+    creator_email = serializers.EmailField(required=False, allow_blank=False)
+    creator_password = serializers.CharField(required=False, allow_blank=False, write_only=True)
+    creator_first_name = serializers.CharField(
+        required=False, allow_blank=True, trim_whitespace=True
+    )
+    creator_last_name = serializers.CharField(
+        required=False, allow_blank=True, trim_whitespace=True
+    )
 
     def validate_name(self, value: str) -> str:
         normalized = value.strip()
@@ -75,4 +86,4 @@ class OrganizationUserSerializer(serializers.Serializer):
     first_name = serializers.CharField(allow_blank=True)
     last_name = serializers.CharField(allow_blank=True)
     is_active = serializers.BooleanField()
-    roles = serializers.ListField(child=serializers.CharField())
+    role = serializers.CharField()

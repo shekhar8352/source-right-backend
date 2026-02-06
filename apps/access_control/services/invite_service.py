@@ -110,10 +110,10 @@ def accept_invite(*, token: str, password: str) -> OrganizationInvite:
             user.set_password(password)
             user.save()
 
-        UserRole.objects.get_or_create(
+        UserRole.objects.update_or_create(
             user=user,
             org=invite.org,
-            role=invite.role,
+            defaults={"role": invite.role},
         )
 
         invite.status = InviteStatus.ACTIVE

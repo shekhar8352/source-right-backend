@@ -34,7 +34,7 @@ class OrganizationInviteTests(TestCase):
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
 
-        payload = {"email": "invitee@example.com", "role": RoleType.ORG_MEMBER}
+        payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
         response = self.client.post(
             self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
         )
@@ -53,10 +53,10 @@ class OrganizationInviteTests(TestCase):
         member = get_user_model().objects.create_user(
             username="member", email="member@example.com", password="pass1234"
         )
-        UserRole.objects.create(user=member, org=org, role=RoleType.ORG_MEMBER)
+        UserRole.objects.create(user=member, org=org, role=RoleType.VIEWER)
 
         self._login_as(member)
-        payload = {"email": "invitee@example.com", "role": RoleType.ORG_MEMBER}
+        payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
         response = self.client.post(
             self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
         )
@@ -69,7 +69,7 @@ class OrganizationInviteTests(TestCase):
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
 
-        payload = {"email": "invitee@example.com", "role": RoleType.ORG_MEMBER}
+        payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
         first = self.client.post(
             self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
         )
@@ -86,7 +86,7 @@ class OrganizationInviteTests(TestCase):
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
 
-        payload = {"email": "invitee@example.com", "role": RoleType.ORG_MEMBER}
+        payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
         response = self.client.post(
             self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
         )
@@ -104,6 +104,6 @@ class OrganizationInviteTests(TestCase):
             UserRole.objects.filter(
                 org=org,
                 user__email="invitee@example.com",
-                role=RoleType.ORG_MEMBER,
+                role=RoleType.VIEWER,
             ).exists()
         )

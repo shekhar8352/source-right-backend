@@ -24,7 +24,7 @@ def require_org_admin(request):
     return None
 
 
-def build_user_payload(user, roles):
+def build_user_payload(user, role):
     return {
         "id": user.id,
         "username": user.username,
@@ -32,13 +32,15 @@ def build_user_payload(user, roles):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "is_active": user.is_active,
-        "roles": roles,
+        "role": role,
     }
 
 
-def get_user_roles(org_id: str, user_id: int) -> list[str]:
-    return list(
-        UserRole.objects.filter(org_id=org_id, user_id=user_id).values_list("role", flat=True)
+def get_user_role(org_id: str, user_id: int) -> str | None:
+    return (
+        UserRole.objects.filter(org_id=org_id, user_id=user_id)
+        .values_list("role", flat=True)
+        .first()
     )
 
 

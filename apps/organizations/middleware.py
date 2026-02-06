@@ -6,6 +6,9 @@ from django.conf import settings
 from django.http import JsonResponse
 
 from apps.access_control.models import UserRole
+from apps.access_control.domain.enums import RoleType
+
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
 def _normalize_path(path: str) -> str:
@@ -65,6 +68,18 @@ class OrganizationContextMiddleware:
                 status=403,
             )
 
+        if self._is_internal(request.path) and membership.role == RoleType.VENDOR:
+            return JsonResponse(
+                {"detail": "Vendor role cannot access internal APIs."},
+                status=403,
+            )
+
+        if membership.role == RoleType.VIEWER and request.method not in SAFE_METHODS:
+            return JsonResponse(
+                {"detail": "Viewer role cannot mutate data."},
+                status=403,
+            )
+
         request.org_id = org_id
         request.organization = membership.org
         request.organization_role = membership.role
@@ -81,3 +96,7 @@ class OrganizationContextMiddleware:
         if _is_exempt(path, exempt_paths):
             return False
         return True
+
+    def _is_internal(self, path: str) -> bool:
+        internal_prefixes = getattr(settings, "INTERNAL_API_PREFIXES", ["/api/internal/"])
+        return _matches_prefix(path, internal_prefixes)

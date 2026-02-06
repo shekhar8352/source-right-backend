@@ -180,6 +180,7 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/schema",
     "/api/docs",
 ]
+INTERNAL_API_PREFIXES = ["/api/internal/"]
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@sourceright.local")
 INVITE_ACCEPT_URL_BASE = os.environ.get("INVITE_ACCEPT_URL_BASE", "").strip()

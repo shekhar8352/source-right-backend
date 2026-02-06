@@ -18,7 +18,10 @@ from apps.organizations.services.organization_service import create_organization
 class OrganizationCreationTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username="admin", email="admin@example.com", password="pass1234"
+            username="admin",
+            email="admin@example.com",
+            password="pass1234",
+            primary_role=RoleType.ORG_ADMIN,
         )
         self.api_client = APIClient()
         self.url = reverse("create-organization")

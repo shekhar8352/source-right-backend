@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_extensions",
     "rest_framework",
+    "rest_framework.authtoken",
     "drf_spectacular",
     "django_celery_results",
     "django_celery_beat",
@@ -149,6 +150,10 @@ LOGGING = build_logging_config(base_dir=BASE_DIR)
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
 }
@@ -171,6 +176,7 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/health/live",
     "/api/health/ready",
     "/api/accounts/register",
+    "/api/accounts/login",
     "/api/schema",
     "/api/docs",
 ]

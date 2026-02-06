@@ -18,7 +18,10 @@ from apps.organizations.services.organization_service import create_organization
 class OrganizationInviteTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username="admin", email="admin@example.com", password="pass1234"
+            username="admin",
+            email="admin@example.com",
+            password="pass1234",
+            primary_role=RoleType.ORG_ADMIN,
         )
         self.client = APIClient()
         self.invite_url = "/api/organizations/invites"
@@ -51,7 +54,10 @@ class OrganizationInviteTests(TestCase):
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
         member = get_user_model().objects.create_user(
-            username="member", email="member@example.com", password="pass1234"
+            username="member",
+            email="member@example.com",
+            password="pass1234",
+            primary_role=RoleType.VIEWER,
         )
         UserRole.objects.create(user=member, org=org, role=RoleType.VIEWER)
 

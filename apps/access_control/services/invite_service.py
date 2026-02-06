@@ -105,8 +105,11 @@ def accept_invite(*, token: str, password: str) -> OrganizationInvite:
                 username=username,
                 email=normalized_email,
                 password=password,
+                primary_role=invite.role,
             )
         else:
+            if user.primary_role != invite.role:
+                raise ValueError("User primary role does not match invite role.")
             user.set_password(password)
             user.save()
 

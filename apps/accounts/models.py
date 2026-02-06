@@ -6,6 +6,7 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 from django.utils import timezone
 
+from apps.access_control.domain.enums import RoleType
 
 class User(AbstractBaseUser, PermissionsMixin):
     username_validator = UnicodeUsernameValidator()
@@ -21,6 +22,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField("first name", max_length=150, blank=True)
     last_name = models.CharField("last name", max_length=150, blank=True)
     email = models.EmailField("email address", unique=True)
+    primary_role = models.CharField(
+        max_length=40,
+        choices=RoleType.choices,
+    )
     password = models.CharField("password", max_length=128)
     last_login = models.DateTimeField("last login", blank=True, null=True)
     is_staff = models.BooleanField(
@@ -60,7 +65,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ["email"]
+    REQUIRED_FIELDS = ["email", "primary_role"]
 
     class Meta:
         verbose_name = "user"

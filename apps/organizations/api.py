@@ -70,6 +70,7 @@ def create_organization_view(request):
                     creator = User(
                         username=creator_username,
                         email=creator_email,
+                        primary_role=RoleType.ORG_ADMIN,
                         first_name=creator_first_name,
                         last_name=creator_last_name,
                     )
@@ -91,6 +92,16 @@ def create_organization_view(request):
                     {"detail": "User not found for created_by_id."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+    if creator is None:
+        return Response(
+            {"detail": "Creator is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if creator.primary_role != RoleType.ORG_ADMIN:
+        return Response(
+            {"detail": "Only ORG_ADMIN users can create organizations."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     if organization is None:
         organization = create_organization(creator=creator, **serializer.validated_data)

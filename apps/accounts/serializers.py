@@ -12,7 +12,7 @@ class UserCreateSerializer(serializers.Serializer):
     email = serializers.EmailField(allow_blank=False)
     password = serializers.CharField(write_only=True, allow_blank=False)
     role = serializers.ChoiceField(choices=RoleType.choices)
-    org_id = serializers.CharField(allow_blank=False, trim_whitespace=True)
+    org_id = serializers.CharField(required=False, allow_blank=False, trim_whitespace=True)
     first_name = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
     last_name = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
 
@@ -34,11 +34,38 @@ class UserCreateSerializer(serializers.Serializer):
         validate_password(value)
         return value
 
+    def validate(self, attrs):
+        role = attrs.get("role")
+        org_id = attrs.get("org_id")
+        if role != RoleType.ORG_ADMIN and not org_id:
+            raise serializers.ValidationError(
+                {"org_id": "org_id is required for non-ORG_ADMIN roles."}
+            )
+        return attrs
+
 
 class UserResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     username = serializers.CharField()
     email = serializers.EmailField()
+    primary_role = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     date_joined = serializers.DateTimeField()
+
+
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    password = serializers.CharField(write_only=True, allow_blank=False)
+
+    def validate(self, attrs):
+        if not attrs.get("username") and not attrs.get("email"):
+            raise serializers.ValidationError(
+                {"detail": "username or email is required."}
+            )
+        return attrs
+
+
+class TokenResponseSerializer(serializers.Serializer):
+    token = serializers.CharField()

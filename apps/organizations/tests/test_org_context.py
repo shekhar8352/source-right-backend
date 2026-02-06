@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
+from apps.access_control.domain.enums import RoleType
 from apps.organizations.services.organization_service import create_organization
 
 
@@ -13,7 +14,10 @@ from apps.organizations.services.organization_service import create_organization
 class OrganizationContextMiddlewareTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username="admin", email="admin@example.com", password="pass1234"
+            username="admin",
+            email="admin@example.com",
+            password="pass1234",
+            primary_role=RoleType.ORG_ADMIN,
         )
         self.client = APIClient()
         self.url = "/api/example"

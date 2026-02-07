@@ -1,12 +1,26 @@
 from __future__ import annotations
 
 from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.models import PermissionsMixin, UserManager
+from django.contrib.auth.models import PermissionsMixin, UserManager as DjangoUserManager
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 from django.utils import timezone
 
 from apps.access_control.domain.enums import RoleType
+
+
+class UserStatus(models.TextChoices):
+    ACTIVE = "ACTIVE", "Active"
+    INACTIVE = "INACTIVE", "Inactive"
+
+
+class UserQuerySet(models.QuerySet):
+    def delete(self):  # pragma: no cover - used for safety
+        return self.update(status=UserStatus.INACTIVE, is_active=False)
+
+
+class UserManager(DjangoUserManager.from_queryset(UserQuerySet)):
+    pass
 
 class User(AbstractBaseUser, PermissionsMixin):
     username_validator = UnicodeUsernameValidator()
@@ -37,6 +51,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         "active",
         default=True,
         help_text="Designates whether this user should be treated as active.",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=UserStatus.choices,
+        default=UserStatus.ACTIVE,
     )
     date_joined = models.DateTimeField("date joined", default=timezone.now)
     is_superuser = models.BooleanField(
@@ -80,3 +99,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self) -> str:
         return self.first_name or self.username
+
+    def soft_delete(self) -> None:
+        if self.status != UserStatus.INACTIVE or self.is_active:
+            self.status = UserStatus.INACTIVE
+            self.is_active = False
+            self.save(update_fields=["status", "is_active"])
+
+    def delete(self, using=None, keep_parents=False):  # pragma: no cover - safety
+        self.soft_delete()
+        return (1, {self._meta.label: 1})

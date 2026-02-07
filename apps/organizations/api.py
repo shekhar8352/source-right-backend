@@ -10,6 +10,7 @@ from django.db import transaction, IntegrityError
 from shared.logging import get_logger
 
 from apps.access_control.domain.enums import RoleType
+from apps.accounts.models import UserStatus
 from apps.access_control.serializers import (
     OrganizationInviteAcceptSerializer,
     OrganizationInviteCreateSerializer,
@@ -229,9 +230,10 @@ def deactivate_organization_user_view(request, user_id: int):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if user.is_active:
+    if user.is_active or user.status != UserStatus.INACTIVE:
         user.is_active = False
-        user.save(update_fields=["is_active"])
+        user.status = UserStatus.INACTIVE
+        user.save(update_fields=["is_active", "status"])
 
     role = get_user_role(request.organization.org_id, user.id)
     serializer = OrganizationUserSerializer(build_user_payload(user, role))
@@ -260,9 +262,10 @@ def reactivate_organization_user_view(request, user_id: int):
         return Response({"detail": "User not found in organization."}, status=404)
 
     user = membership.user
-    if not user.is_active:
+    if not user.is_active or user.status != UserStatus.ACTIVE:
         user.is_active = True
-        user.save(update_fields=["is_active"])
+        user.status = UserStatus.ACTIVE
+        user.save(update_fields=["is_active", "status"])
 
     role = get_user_role(request.organization.org_id, user.id)
     serializer = OrganizationUserSerializer(build_user_payload(user, role))

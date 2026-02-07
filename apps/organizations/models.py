@@ -7,6 +7,11 @@ from .domain.enums import OrganizationStatus
 from .domain.identifiers import generate_org_id
 
 
+class OrganizationQuerySet(models.QuerySet):
+    def delete(self):  # pragma: no cover - used for safety
+        return self.update(status=OrganizationStatus.DELETED)
+
+
 class Organization(models.Model):
     org_id = models.CharField(
         primary_key=True,
@@ -30,8 +35,19 @@ class Organization(models.Model):
         related_name="created_organizations",
     )
 
+    objects = OrganizationQuerySet.as_manager()
+
     class Meta:
         db_table = "organizations"
 
     def __str__(self) -> str:  # pragma: no cover - convenience only
         return f"{self.name} ({self.org_id})"
+
+    def soft_delete(self) -> None:
+        if self.status != OrganizationStatus.DELETED:
+            self.status = OrganizationStatus.DELETED
+            self.save(update_fields=["status"])
+
+    def delete(self, using=None, keep_parents=False):  # pragma: no cover - safety
+        self.soft_delete()
+        return (1, {self._meta.label: 1})

@@ -11,6 +11,7 @@ from shared.logging import get_logger
 from apps.organizations.models import Organization
 from apps.access_control.repositories.user_role_repository import UserRoleRepository
 from apps.access_control.models import UserRole
+from apps.accounts.models import UserStatus
 
 from .serializers import (
     TokenResponseSerializer,
@@ -93,7 +94,7 @@ def login_view(request):
     user = authenticate(request, username=username, password=password)
     if not user:
         return Response({"detail": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
-    if not user.is_active:
+    if not user.is_active or user.status != UserStatus.ACTIVE:
         return Response({"detail": "User is inactive."}, status=status.HTTP_403_FORBIDDEN)
 
     org_id = serializer.validated_data.get("org_id")

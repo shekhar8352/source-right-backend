@@ -6,6 +6,7 @@ from rest_framework.authentication import BaseAuthentication, get_authorization_
 from rest_framework.exceptions import AuthenticationFailed
 
 from apps.access_control.models import UserRole
+from apps.accounts.models import UserStatus
 
 from .services.auth_token_service import parse_token
 
@@ -88,6 +89,6 @@ class OrgTokenAuthentication(BaseAuthentication):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist as exc:
             raise AuthenticationFailed("User not found.") from exc
-        if not user.is_active:
+        if not user.is_active or user.status != UserStatus.ACTIVE:
             raise AuthenticationFailed("User is inactive.")
         return user

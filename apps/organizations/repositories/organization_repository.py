@@ -9,7 +9,9 @@ from ..models import Organization
 
 class OrganizationRepository:
     @staticmethod
-    def create(*, name: str, country: str, base_currency: str, created_by) -> Organization:
+    def create(
+        *, name: str, country: str, base_currency: str, created_by, timezone: str = "UTC"
+    ) -> Organization:
         """Create organization with a retry on org_id collision."""
         attempts = 0
         while True:
@@ -18,6 +20,7 @@ class OrganizationRepository:
                     name=name,
                     country=country,
                     base_currency=base_currency,
+                    timezone=timezone,
                     created_by=created_by,
                 )
             except IntegrityError:  # pragma: no cover - extremely unlikely

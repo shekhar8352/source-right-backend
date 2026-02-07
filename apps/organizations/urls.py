@@ -4,6 +4,11 @@ from . import api
 
 urlpatterns = [
     path("organizations", api.create_organization_view, name="create-organization"),
+    path(
+        "organizations/settings",
+        api.organization_settings_view,
+        name="organization-settings",
+    ),
     path("organizations/users", api.list_organization_users_view, name="list-organization-users"),
     path(
         "organizations/users/<int:user_id>/deactivate",

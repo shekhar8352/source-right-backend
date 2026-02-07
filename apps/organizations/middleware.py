@@ -63,13 +63,17 @@ class OrganizationContextMiddleware:
                     {"detail": "Authentication credentials were not provided."}, status=401
                 )
 
-        org_id = _get_org_id_from_request(request)
-        if not org_id:
-            org_id = getattr(request, "org_id", None)
-        elif getattr(request, "org_id", None) and org_id != request.org_id:
-            return JsonResponse(
-                {"detail": "Organization context does not match token."}, status=403
-            )
+        token_org_id = getattr(request, "org_id", None)
+        session_org_id = None
+        if not token_org_id and hasattr(request, "session"):
+            session_org_id = request.session.get("org_id")
+
+        if token_org_id:
+            org_id = token_org_id
+        elif session_org_id:
+            org_id = session_org_id
+        else:
+            org_id = _get_org_id_from_request(request)
         if not org_id:
             return JsonResponse({"detail": "Organization context is required."}, status=403)
 

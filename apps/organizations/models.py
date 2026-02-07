@@ -17,6 +17,7 @@ class Organization(models.Model):
     name = models.CharField(max_length=255)
     country = models.CharField(max_length=3)
     base_currency = models.CharField(max_length=3)
+    timezone = models.CharField(max_length=64, default="UTC")
     status = models.CharField(
         max_length=20,
         choices=OrganizationStatus.choices,
@@ -34,4 +35,3 @@ class Organization(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - convenience only
         return f"{self.name} ({self.org_id})"
-

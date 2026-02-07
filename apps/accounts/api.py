@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate, get_user_model, login as auth_login
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -139,6 +139,9 @@ def login_view(request):
         membership_role = membership.role
 
     token = issue_token(user_id=user.id, org_id=organization.org_id, role=membership_role)
+    auth_login(request, user)
+    request.session["org_id"] = organization.org_id
+    request.session["org_role"] = membership_role
     response = {
         "token": token,
         "user_id": user.id,

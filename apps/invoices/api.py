@@ -74,9 +74,24 @@ def upload_invoice_view(request):
 
     invoice_id = serializer.validated_data["invoice_id"]
     amount = serializer.validated_data["amount"]
-    create_invoice(invoice_id=invoice_id, amount=amount)
+    currency = serializer.validated_data.get("currency", request.organization.base_currency)
+    country = serializer.validated_data.get("country", request.organization.country)
+    timezone = serializer.validated_data.get("timezone", request.organization.timezone)
+    create_invoice(
+        invoice_id=invoice_id,
+        amount=amount,
+        currency=currency,
+        country=country,
+        timezone=timezone,
+    )
 
     return Response(
-        {"invoice_id": invoice_id, "status": "uploaded"},
+        {
+            "invoice_id": invoice_id,
+            "status": "uploaded",
+            "currency": currency,
+            "country": country,
+            "timezone": timezone,
+        },
         status=status.HTTP_201_CREATED,
     )

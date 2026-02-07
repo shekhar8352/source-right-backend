@@ -22,6 +22,8 @@ from .serializers import (
     OrganizationCreateSerializer,
     OrganizationInviteAcceptResponseSerializer,
     OrganizationResponseSerializer,
+    OrganizationSettingsSerializer,
+    OrganizationSettingsUpdateSerializer,
     OrganizationUserSerializer,
 )
 from .services.organization_service import create_organization
@@ -113,6 +115,56 @@ def create_organization_view(request):
 
     response_serializer = OrganizationResponseSerializer(organization)
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    summary="Organization settings",
+    description="Read or update organization settings. Only org admins can update.",
+    request=OrganizationSettingsUpdateSerializer,
+    responses={200: OrganizationSettingsSerializer},
+)
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def organization_settings_view(request):
+    """Read or update organization settings."""
+    if getattr(request, "organization", None) is None:
+        return Response(
+            {"detail": "Organization context is required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    organization = request.organization
+    if request.method == "GET":
+        serializer = OrganizationSettingsSerializer(
+            {
+                "org_id": organization.org_id,
+                "base_currency": organization.base_currency,
+                "country": organization.country,
+                "timezone": organization.timezone,
+            }
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    guard = require_org_admin(request)
+    if guard:
+        return guard
+
+    serializer = OrganizationSettingsUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    for field, value in serializer.validated_data.items():
+        setattr(organization, field, value)
+    organization.save(update_fields=list(serializer.validated_data.keys()))
+
+    response_serializer = OrganizationSettingsSerializer(
+        {
+            "org_id": organization.org_id,
+            "base_currency": organization.base_currency,
+            "country": organization.country,
+            "timezone": organization.timezone,
+        }
+    )
+    return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(

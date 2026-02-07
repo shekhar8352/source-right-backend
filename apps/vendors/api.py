@@ -34,5 +34,11 @@ def create_vendor_view(request):
     serializer.is_valid(raise_exception=True)
 
     vendor_id = f"ven_{uuid4().hex[:10]}"
-    payload = {"vendor_id": vendor_id, "name": serializer.validated_data["name"]}
+    payload = {
+        "vendor_id": vendor_id,
+        "org_id": request.organization.org_id,
+        "name": serializer.validated_data["name"],
+        "country": serializer.validated_data.get("country", request.organization.country),
+        "timezone": serializer.validated_data.get("timezone", request.organization.timezone),
+    }
     return Response(payload, status=status.HTTP_201_CREATED)

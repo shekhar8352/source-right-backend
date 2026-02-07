@@ -8,13 +8,16 @@ from apps.access_control.repositories.user_role_repository import UserRoleReposi
 from ..repositories.organization_repository import OrganizationRepository
 
 
-def create_organization(*, creator, name: str, country: str, base_currency: str):
+def create_organization(
+    *, creator, name: str, country: str, base_currency: str, timezone: str = "UTC"
+):
     """Create an organization and assign ORG_ADMIN to the creator atomically."""
     with transaction.atomic():
         organization = OrganizationRepository.create(
             name=name,
             country=country,
             base_currency=base_currency,
+            timezone=timezone,
             created_by=creator,
         )
         UserRoleRepository.assign_role(

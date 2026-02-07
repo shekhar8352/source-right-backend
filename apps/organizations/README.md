@@ -4,15 +4,18 @@ Multi-tenant organization (company workspace) management. This app defines the t
 
 ## Responsibilities
 - Organization creation with server-generated `org_id`.
+- Organization settings management (`base_currency`, `country`, `timezone`).
 - Organization-scoped query helpers to prevent cross-tenant access.
 
 ## API
 - `POST /api/organizations`
+- `GET /api/organizations/settings`
+- `PATCH /api/organizations/settings` (admin only)
 - `POST /api/organizations/invites`
 - `POST /api/organizations/invites/accept`
 
 ## Data Model
-- `organizations` — tenant/workspace records
+- `organizations` — tenant/workspace records and org defaults (`base_currency`, `country`, `timezone`)
 
 ## Notes
 - All org-scoped tables must include `org_id`.

@@ -28,6 +28,7 @@ Required variables:
 - `DJANGO_SECRET_KEY`
 - `DJANGO_DEBUG`
 - `DJANGO_ALLOWED_HOSTS`
+- `CORS_ALLOW_ALL_ORIGINS`, `CORS_ALLOWED_ORIGINS`, `CORS_ALLOW_CREDENTIALS`, `CSRF_TRUSTED_ORIGINS`
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD`
 - `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`
@@ -46,6 +47,12 @@ Ensure the Celery container is attached to the same Docker network as Redis/Post
 ```bash
 BACKEND_DOCKER_NETWORK=yourproject_backend docker compose up --build celery_worker
 ```
+
+For a local Vite app, set:
+- `CORS_ALLOW_ALL_ORIGINS=False`
+- `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
+- `CORS_ALLOW_CREDENTIALS=True`
+- `CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
 
 ## Run Django API Locally
 

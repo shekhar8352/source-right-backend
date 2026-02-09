@@ -30,7 +30,7 @@ def parse_bool(value: str) -> bool:
 
 def parse_csv_env(name: str) -> list[str]:
     raw = os.environ.get(name, "")
-    return [item.strip().upper() for item in raw.split(",") if item.strip()]
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 SECRET_KEY = require_env("DJANGO_SECRET_KEY")
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "django_extensions",
     "rest_framework",
     "rest_framework.authtoken",
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "shared.logging.middleware.LoggingMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -160,14 +162,19 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
+CORS_ALLOW_ALL_ORIGINS = parse_bool(os.environ.get("CORS_ALLOW_ALL_ORIGINS", "false"))
+CORS_ALLOWED_ORIGINS = parse_csv_env("CORS_ALLOWED_ORIGINS")
+CORS_ALLOW_CREDENTIALS = parse_bool(os.environ.get("CORS_ALLOW_CREDENTIALS", "true"))
+CSRF_TRUSTED_ORIGINS = parse_csv_env("CSRF_TRUSTED_ORIGINS")
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "SourceRight API",
     "DESCRIPTION": "SourceRight API documentation",
     "VERSION": "0.1.0",
 }
 
-ALLOWED_COUNTRIES = parse_csv_env("ALLOWED_COUNTRIES")
-ALLOWED_CURRENCIES = parse_csv_env("ALLOWED_CURRENCIES")
+ALLOWED_COUNTRIES = [country.upper() for country in parse_csv_env("ALLOWED_COUNTRIES")]
+ALLOWED_CURRENCIES = [currency.upper() for currency in parse_csv_env("ALLOWED_CURRENCIES")]
 DEFAULT_BASE_CURRENCY = os.environ.get("DEFAULT_BASE_CURRENCY", "").strip().upper()
 DEFAULT_ORG_TIMEZONE = os.environ.get("DEFAULT_ORG_TIMEZONE", "UTC").strip() or "UTC"
 

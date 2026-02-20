@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "django_celery_results",
     "django_celery_beat",
@@ -200,6 +201,7 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/accounts/register",
     "/api/accounts/login",
     "/api/accounts/token/refresh",
+    "/api/accounts/logout",
     "/api/schema",
     "/api/docs",
 ]

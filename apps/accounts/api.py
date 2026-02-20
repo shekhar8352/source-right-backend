@@ -5,6 +5,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from shared.logging import get_logger
@@ -155,3 +157,29 @@ def login_view(request):
 class RefreshTokenView(TokenRefreshView):
     authentication_classes = []
     permission_classes = []
+
+
+@extend_schema(
+    summary="Logout",
+    description="Blacklist a refresh token so it cannot be used again.",
+)
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def logout_view(request):
+    refresh_token = request.data.get("refresh") or request.data.get("refresh_token")
+    if not refresh_token:
+        return Response(
+            {"detail": "refresh token is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        RefreshToken(refresh_token).blacklist()
+    except TokenError:
+        return Response(
+            {"detail": "Invalid or expired refresh token."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response({"detail": "Logout successful."}, status=status.HTTP_200_OK)

@@ -100,6 +100,16 @@ curl -X POST http://localhost:8000/api/accounts/token/refresh \
 
 The refresh endpoint returns a new `access` token.
 
+4. Logout (revoke refresh token):
+
+```bash
+curl -X POST http://localhost:8000/api/accounts/logout \
+  -H "Content-Type: application/json" \
+  -d '{"refresh":"<refresh_token>"}'
+```
+
+Refresh tokens are persisted in the database using SimpleJWT blacklist tables (`OutstandingToken` / `BlacklistedToken`), which supports revocation and auditability.
+
 ## Django Shell Plus
 
 Install dependencies (if not already):

@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from apps.access_control.domain.enums import RoleType
 from apps.organizations.services.organization_service import create_organization
@@ -129,3 +131,49 @@ class LoginWithOrgContextTests(TestCase):
         self.assertEqual(refresh_response.status_code, 200)
         payload = refresh_response.json()
         self.assertIn("access", payload)
+
+    def test_refresh_token_is_persisted_in_db(self):
+        response = self.client.post(
+            "/api/accounts/login",
+            {
+                "username": self.user.username,
+                "password": self.password,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        refresh = response.json()["refresh_token"]
+        refresh_obj = RefreshToken(refresh)
+
+        self.assertTrue(
+            OutstandingToken.objects.filter(
+                jti=str(refresh_obj["jti"]),
+                user=self.user,
+            ).exists()
+        )
+
+    def test_logout_blacklists_refresh_token(self):
+        response = self.client.post(
+            "/api/accounts/login",
+            {
+                "username": self.user.username,
+                "password": self.password,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        refresh = response.json()["refresh_token"]
+
+        logout_response = self.client.post(
+            "/api/accounts/logout",
+            {"refresh": refresh},
+            format="json",
+        )
+        self.assertEqual(logout_response.status_code, 200)
+
+        refresh_response = self.client.post(
+            "/api/accounts/token/refresh",
+            {"refresh": refresh},
+            format="json",
+        )
+        self.assertEqual(refresh_response.status_code, 401)

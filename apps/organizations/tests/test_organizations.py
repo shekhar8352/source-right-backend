@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from apps.access_control.domain.enums import RoleType
 from apps.access_control.models import UserRole
 from apps.access_control.repositories.user_role_repository import UserRoleRepository
+from apps.accounts.services.auth_token_service import issue_token
 from apps.organizations.models import Organization
 from apps.organizations.services.organization_service import create_organization
 
@@ -26,10 +27,13 @@ class OrganizationCreationTests(TestCase):
         self.api_client = APIClient()
         self.url = reverse("create-organization")
 
-        self.assertTrue(self.api_client.login(username="admin", password="pass1234"))
-
     def test_create_organization_success(self):
-        payload = {"name": "Acme Corp", "country": "IN", "base_currency": "INR"}
+        payload = {
+            "name": "Acme Corp",
+            "country": "IN",
+            "base_currency": "INR",
+            "created_by_id": self.user.id,
+        }
 
         response = self.api_client.post(self.url, payload, format="json")
 
@@ -53,14 +57,24 @@ class OrganizationCreationTests(TestCase):
         )
 
     def test_empty_name_rejected(self):
-        payload = {"name": "   ", "country": "IN", "base_currency": "INR"}
+        payload = {
+            "name": "   ",
+            "country": "IN",
+            "base_currency": "INR",
+            "created_by_id": self.user.id,
+        }
 
         response = self.api_client.post(self.url, payload, format="json")
 
         self.assertEqual(response.status_code, 400)
 
     def test_duplicate_name_allowed(self):
-        payload = {"name": "Acme Corp", "country": "IN", "base_currency": "INR"}
+        payload = {
+            "name": "Acme Corp",
+            "country": "IN",
+            "base_currency": "INR",
+            "created_by_id": self.user.id,
+        }
 
         first = self.api_client.post(self.url, payload, format="json")
         second = self.api_client.post(self.url, payload, format="json")
@@ -107,17 +121,16 @@ class OrganizationSettingsTests(TestCase):
         )
         self.settings_url = reverse("organization-settings")
 
-    def _login(self, user):
-        self.client.logout()
-        self.assertTrue(self.client.login(username=user.username, password=self.password))
-        return {"HTTP_X_ORG_ID": self.org.org_id}
+    def _auth_headers(self, user, role):
+        token = issue_token(user_id=user.id, org_id=self.org.org_id, role=role)
+        return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
     def test_admin_can_update_settings(self):
         response = self.client.patch(
             self.settings_url,
             {"base_currency": "INR", "country": "IN", "timezone": "Asia/Kolkata"},
             format="json",
-            **self._login(self.admin),
+            **self._auth_headers(self.admin, RoleType.ORG_ADMIN),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -145,7 +158,7 @@ class OrganizationSettingsTests(TestCase):
             self.settings_url,
             {"base_currency": "INR"},
             format="json",
-            **self._login(finance),
+            **self._auth_headers(finance, RoleType.FINANCE),
         )
 
         self.assertEqual(response.status_code, 403)
@@ -155,14 +168,14 @@ class OrganizationSettingsTests(TestCase):
             self.settings_url,
             {"base_currency": "INR", "country": "IN", "timezone": "Asia/Kolkata"},
             format="json",
-            **self._login(self.admin),
+            **self._auth_headers(self.admin, RoleType.ORG_ADMIN),
         )
 
         vendor_response = self.client.post(
             "/api/internal/vendors",
             {"name": "Vendor One"},
             format="json",
-            **self._login(self.admin),
+            **self._auth_headers(self.admin, RoleType.ORG_ADMIN),
         )
         self.assertEqual(vendor_response.status_code, 201)
         vendor_payload = vendor_response.json()
@@ -181,7 +194,7 @@ class OrganizationSettingsTests(TestCase):
             "/api/vendor/invoices/upload",
             {"invoice_id": "inv-999", "amount": 500},
             format="json",
-            **self._login(vendor_user),
+            **self._auth_headers(vendor_user, RoleType.VENDOR),
         )
         self.assertEqual(invoice_response.status_code, 201)
         invoice_payload = invoice_response.json()

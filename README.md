@@ -32,6 +32,7 @@ Required variables:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD`
 - `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`
+- `JWT_ACCESS_TOKEN_LIFETIME_MINUTES`, `JWT_REFRESH_TOKEN_LIFETIME_DAYS`
 
 If Redis is running on your host machine, set:
 - `REDIS_HOST=localhost`
@@ -62,6 +63,42 @@ python manage.py runserver
 ```
 
 This uses `sourceright.settings.local` by default.
+
+## Authentication (JWT)
+
+The API uses JWT access/refresh tokens.
+
+1. Login:
+
+```bash
+curl -X POST http://localhost:8000/api/accounts/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"pass1234","org_id":"org_xxx"}'
+```
+
+Response includes:
+- `access_token`
+- `refresh_token`
+- `user_id`
+- `org_id`
+- `role`
+
+2. Call protected APIs:
+
+```bash
+curl http://localhost:8000/api/internal/invoices \
+  -H "Authorization: Bearer <access_token>"
+```
+
+3. Refresh access token:
+
+```bash
+curl -X POST http://localhost:8000/api/accounts/token/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh":"<refresh_token>"}'
+```
+
+The refresh endpoint returns a new `access` token.
 
 ## Django Shell Plus
 

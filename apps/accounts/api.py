@@ -1,10 +1,11 @@
-from django.contrib.auth import authenticate, get_user_model, login as auth_login
+from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from shared.logging import get_logger
 
@@ -19,7 +20,7 @@ from .serializers import (
     UserLoginSerializer,
     UserResponseSerializer,
 )
-from .services.auth_token_service import issue_token
+from .services.auth_token_service import issue_token_pair
 
 logger = get_logger(__name__)
 User = get_user_model()
@@ -77,6 +78,7 @@ def register_user_view(request):
     responses={200: TokenResponseSerializer},
 )
 @api_view(["POST"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def login_view(request):
     """Authenticate a user and return an API token."""
@@ -139,14 +141,17 @@ def login_view(request):
         organization = membership.org
         membership_role = membership.role
 
-    token = issue_token(user_id=user.id, org_id=organization.org_id, role=membership_role)
-    auth_login(request, user)
-    request.session["org_id"] = organization.org_id
-    request.session["org_role"] = membership_role
+    tokens = issue_token_pair(user_id=user.id, org_id=organization.org_id, role=membership_role)
     response = {
-        "token": token,
+        "access_token": tokens["access_token"],
+        "refresh_token": tokens["refresh_token"],
         "user_id": user.id,
         "org_id": organization.org_id,
         "role": membership_role,
     }
     return Response(response, status=status.HTTP_200_OK)
+
+
+class RefreshTokenView(TokenRefreshView):
+    authentication_classes = []
+    permission_classes = []

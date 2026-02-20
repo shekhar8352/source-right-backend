@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from apps.access_control.domain.enums import InviteStatus, RoleType
 from apps.access_control.models import OrganizationInvite, UserRole
+from apps.accounts.services.auth_token_service import issue_token
 from apps.organizations.services.organization_service import create_organization
 
 
@@ -27,20 +28,19 @@ class OrganizationInviteTests(TestCase):
         self.invite_url = "/api/organizations/invites"
         self.accept_url = "/api/organizations/invites/accept"
 
-    def _login_as(self, user, password="pass1234"):
-        self.client.logout()
-        self.assertTrue(self.client.login(username=user.username, password=password))
+    def _auth_headers(self, *, user, org_id, role):
+        token = issue_token(user_id=user.id, org_id=org_id, role=role)
+        return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
     def test_admin_can_invite_user(self):
-        self._login_as(self.user)
         org = create_organization(
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
+        headers = self._auth_headers(user=self.user, org_id=org.org_id, role=RoleType.ORG_ADMIN)
 
         payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
-        response = self.client.post(
-            self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(self.invite_url, payload, format="json", **headers)
 
         self.assertEqual(response.status_code, 201)
         data = response.json()
@@ -60,42 +60,33 @@ class OrganizationInviteTests(TestCase):
             primary_role=RoleType.VIEWER,
         )
         UserRole.objects.create(user=member, org=org, role=RoleType.VIEWER)
-
-        self._login_as(member)
+        headers = self._auth_headers(user=member, org_id=org.org_id, role=RoleType.VIEWER)
         payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
-        response = self.client.post(
-            self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
-        )
+        response = self.client.post(self.invite_url, payload, format="json", **headers)
 
         self.assertEqual(response.status_code, 403)
 
     def test_duplicate_email_invite_rejected(self):
-        self._login_as(self.user)
         org = create_organization(
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
+        headers = self._auth_headers(user=self.user, org_id=org.org_id, role=RoleType.ORG_ADMIN)
 
         payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
-        first = self.client.post(
-            self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
-        )
-        second = self.client.post(
-            self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
-        )
+        first = self.client.post(self.invite_url, payload, format="json", **headers)
+        second = self.client.post(self.invite_url, payload, format="json", **headers)
 
         self.assertEqual(first.status_code, 201)
         self.assertEqual(second.status_code, 400)
 
     def test_accept_invite_sets_active_and_creates_user(self):
-        self._login_as(self.user)
         org = create_organization(
             creator=self.user, name="Org One", country="IN", base_currency="INR"
         )
+        headers = self._auth_headers(user=self.user, org_id=org.org_id, role=RoleType.ORG_ADMIN)
 
         payload = {"email": "invitee@example.com", "role": RoleType.VIEWER}
-        response = self.client.post(
-            self.invite_url, payload, format="json", HTTP_X_ORG_ID=org.org_id
-        )
+        response = self.client.post(self.invite_url, payload, format="json", **headers)
         self.assertEqual(response.status_code, 201)
 
         invite = OrganizationInvite.objects.get(email="invitee@example.com")

@@ -69,7 +69,8 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class TokenResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
+    access_token = serializers.CharField()
+    refresh_token = serializers.CharField()
     user_id = serializers.IntegerField()
     org_id = serializers.CharField()
     role = serializers.CharField()

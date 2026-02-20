@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 
 from apps.access_control.domain.enums import RoleType
 from apps.access_control.repositories.user_role_repository import UserRoleRepository
+from apps.accounts.services.auth_token_service import issue_token
 from apps.organizations.services.organization_service import create_organization
 
 
@@ -47,9 +48,8 @@ class RoleBasedAccessTests(TestCase):
         )
 
     def _auth_headers(self, user):
-        self.client.logout()
-        self.client.login(username=user.username, password=self.password)
-        return {"HTTP_X_ORG_ID": self.org.org_id}
+        token = issue_token(user_id=user.id, org_id=self.org.org_id, role=user.primary_role)
+        return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
     def test_create_vendor_permissions(self):
         url = "/api/internal/vendors"

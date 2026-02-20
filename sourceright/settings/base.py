@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -49,7 +50,6 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
     "rest_framework",
-    "rest_framework.authtoken",
     "drf_spectacular",
     "django_celery_results",
     "django_celery_beat",
@@ -156,10 +156,22 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "apps.accounts.authentication.OrgTokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+}
+
+JWT_ACCESS_TOKEN_LIFETIME_MINUTES = int(os.environ.get("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "15"))
+JWT_REFRESH_TOKEN_LIFETIME_DAYS = int(os.environ.get("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "7"))
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=JWT_ACCESS_TOKEN_LIFETIME_MINUTES),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=JWT_REFRESH_TOKEN_LIFETIME_DAYS),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "UPDATE_LAST_LOGIN": True,
 }
 
 CORS_ALLOW_ALL_ORIGINS = parse_bool(os.environ.get("CORS_ALLOW_ALL_ORIGINS", "false"))
@@ -187,6 +199,7 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/health/ready",
     "/api/accounts/register",
     "/api/accounts/login",
+    "/api/accounts/token/refresh",
     "/api/schema",
     "/api/docs",
 ]
@@ -194,4 +207,3 @@ INTERNAL_API_PREFIXES = ["/api/internal/"]
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@sourceright.local")
 INVITE_ACCEPT_URL_BASE = os.environ.get("INVITE_ACCEPT_URL_BASE", "").strip()
-AUTH_TOKEN_TTL_SECONDS = int(os.environ.get("AUTH_TOKEN_TTL_SECONDS", "3600"))

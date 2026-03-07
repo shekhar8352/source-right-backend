@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   celery_worker:
     build:
@@ -8,18 +6,16 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: ${POSTGRES_DOCKER_HOST:-host.docker.internal}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      REDIS_HOST: redis
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT}/${REDIS_DB}
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT}/1
+      REDIS_HOST: ${REDIS_DOCKER_HOST:-host.docker.internal}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      CELERY_RESULT_DB: ${CELERY_RESULT_DB:-1}
+      CELERY_BROKER_URL: ""
+      CELERY_RESULT_BACKEND: ""
     volumes:
       - .:/app
-    networks:
-      - backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
-
-networks:
-  backend:
-    external: true
-    name: ${BACKEND_DOCKER_NETWORK:-backend}

@@ -54,6 +54,11 @@ class OrganizationContextMiddleware:
                 status=401,
             )
         request.user, request.auth = auth_result
+        if getattr(request, "organization", None) is None:
+            return JsonResponse(
+                {"detail": "Token missing org context. Create an organization first."},
+                status=401,
+            )
         membership_role = request.organization_role
 
         if self._is_internal(request.path) and membership_role == RoleType.VENDOR:

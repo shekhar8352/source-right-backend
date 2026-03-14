@@ -37,6 +37,7 @@ class UserCreateSerializer(serializers.Serializer):
     def validate(self, attrs):
         role = attrs.get("role")
         org_id = attrs.get("org_id")
+
         if role != RoleType.ORG_ADMIN and not org_id:
             raise serializers.ValidationError(
                 {"org_id": "org_id is required for non-ORG_ADMIN roles."}
@@ -52,6 +53,22 @@ class UserResponseSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     date_joined = serializers.DateTimeField()
+
+
+class UserRegisterResponseSerializer(serializers.Serializer):
+    """Register response; always includes access_token and refresh_token."""
+
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    primary_role = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    date_joined = serializers.DateTimeField()
+    access_token = serializers.CharField(required=False, allow_null=True)
+    refresh_token = serializers.CharField(required=False, allow_null=True)
+    org_id = serializers.CharField(required=False, allow_null=True)
+    role = serializers.CharField(required=False, allow_null=True)
 
 
 class UserLoginSerializer(serializers.Serializer):

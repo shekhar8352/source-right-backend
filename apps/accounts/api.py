@@ -11,18 +11,20 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from shared.logging import get_logger
 
-from apps.organizations.models import Organization
-from apps.access_control.repositories.user_role_repository import UserRoleRepository
+from apps.access_control.domain.enums import RoleType
 from apps.access_control.models import UserRole
+from apps.access_control.repositories.user_role_repository import UserRoleRepository
+from apps.organizations.models import Organization
 from apps.accounts.models import UserStatus
 
 from .serializers import (
     TokenResponseSerializer,
     UserCreateSerializer,
     UserLoginSerializer,
+    UserRegisterResponseSerializer,
     UserResponseSerializer,
 )
-from .services.auth_token_service import issue_token_pair
+from .services.auth_token_service import issue_setup_token_pair, issue_token_pair
 
 logger = get_logger(__name__)
 User = get_user_model()
@@ -31,22 +33,24 @@ User = get_user_model()
 @extend_schema(
     summary="Register user",
     description=(
-        "Create a new user account with a required primary role. "
-        "ORG_ADMIN can be created without org_id."
+        "Create a new user account. Always returns access_token and refresh_token. "
+        "If org_id is provided, user is assigned to that org and tokens include org context. "
+        "ORG_ADMIN without org_id receives setup tokens; create an organization separately."
     ),
     request=UserCreateSerializer,
-    responses={201: UserResponseSerializer},
+    responses={201: UserRegisterResponseSerializer},
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register_user_view(request):
-    """Register a new user account."""
+    """Register a new user account. Always returns access_token and refresh_token."""
     serializer = UserCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
     org_id = serializer.validated_data.get("org_id")
     role = serializer.validated_data["role"]
     organization = None
+
     if org_id:
         try:
             organization = Organization.objects.get(org_id=org_id)
@@ -69,8 +73,37 @@ def register_user_view(request):
 
     logger.info("User registered", extra={"user_id": user.id})
 
-    response_serializer = UserResponseSerializer(user)
-    return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    response_data = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "primary_role": user.primary_role,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "date_joined": user.date_joined,
+    }
+
+    if organization:
+        membership_role = (
+            UserRole.objects.filter(user=user, org=organization)
+            .values_list("role", flat=True)
+            .first()
+        ) or role
+        tokens = issue_token_pair(
+            user_id=user.id,
+            org_id=organization.org_id,
+            role=membership_role,
+        )
+        response_data["access_token"] = tokens["access_token"]
+        response_data["refresh_token"] = tokens["refresh_token"]
+        response_data["org_id"] = organization.org_id
+        response_data["role"] = membership_role
+    else:
+        tokens = issue_setup_token_pair(user_id=user.id)
+        response_data["access_token"] = tokens["access_token"]
+        response_data["refresh_token"] = tokens["refresh_token"]
+
+    return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(
@@ -149,9 +182,36 @@ def login_view(request):
     return Response(response, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Refresh access token",
+    description="Exchange a refresh token for a new access_token. Accepts refresh or refresh_token.",
+    responses={200: {"type": "object", "properties": {"access_token": {"type": "string"}}}},
+)
 class RefreshTokenView(TokenRefreshView):
+    """Refresh access token. Accepts refresh or refresh_token, returns access_token."""
+
     authentication_classes = []
     permission_classes = []
+
+    def get_serializer(self, *args, **kwargs):
+        data = kwargs.get("data", self.request.data)
+        data = dict(data) if data else {}
+        if "refresh" not in data and "refresh_token" in data:
+            data["refresh"] = data["refresh_token"]
+        kwargs["data"] = data
+        return super().get_serializer(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        refresh = request.data.get("refresh") or request.data.get("refresh_token")
+        if not refresh:
+            return Response(
+                {"detail": "refresh or refresh_token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200 and "access" in response.data:
+            response.data["access_token"] = response.data.pop("access")
+        return response
 
 
 @extend_schema(

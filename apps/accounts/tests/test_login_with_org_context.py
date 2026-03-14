@@ -130,7 +130,7 @@ class LoginWithOrgContextTests(TestCase):
 
         self.assertEqual(refresh_response.status_code, 200)
         payload = refresh_response.json()
-        self.assertIn("access", payload)
+        self.assertIn("access_token", payload)
 
     def test_refresh_token_is_persisted_in_db(self):
         response = self.client.post(

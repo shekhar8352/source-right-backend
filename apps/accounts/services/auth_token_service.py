@@ -6,11 +6,22 @@ from rest_framework_simplejwt.tokens import RefreshToken
 User = get_user_model()
 
 
-def _build_refresh_token(*, user, org_id: str, role: str) -> RefreshToken:
+def _build_refresh_token(*, user, org_id: str | None = None, role: str | None = None) -> RefreshToken:
     refresh = RefreshToken.for_user(user)
-    refresh["org_id"] = org_id
-    refresh["role"] = role
+    if org_id and role:
+        refresh["org_id"] = org_id
+        refresh["role"] = role
     return refresh
+
+
+def issue_setup_token_pair(*, user_id: int) -> dict[str, str]:
+    """Issue tokens without org context for post-register setup (e.g. create org)."""
+    user = User.objects.get(id=user_id)
+    refresh = _build_refresh_token(user=user)
+    return {
+        "access_token": str(refresh.access_token),
+        "refresh_token": str(refresh),
+    }
 
 
 def issue_token(*, user_id: int, org_id: str, role: str) -> str:

@@ -20,7 +20,10 @@ class OrgTokenAuthentication(JWTAuthentication):
         org_id = validated_token.get("org_id")
         role = validated_token.get("role")
         if not org_id or not role:
-            raise AuthenticationFailed("Token missing org context.")
+            # Setup token (no org) - valid for create-org and other setup endpoints
+            request.organization = None
+            request.organization_role = None
+            return (user, validated_token)
 
         # When middleware has already resolved org context, enforce claim consistency.
         if getattr(request, "organization", None) is not None:

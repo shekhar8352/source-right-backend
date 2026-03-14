@@ -87,15 +87,10 @@ def login_view(request):
     serializer = UserLoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    username = serializer.validated_data.get("username")
-    email = serializer.validated_data.get("email")
+    identifier = serializer.validated_data.get("username") or serializer.validated_data.get("email")
     password = serializer.validated_data["password"]
 
-    if email and not username:
-        user = User.objects.filter(email__iexact=email).first()
-        username = user.username if user else None
-
-    user = authenticate(request, username=username, password=password)
+    user = authenticate(request, username=identifier, password=password)
     if not user:
         return Response({"detail": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
     if not user.is_active or user.status != UserStatus.ACTIVE:

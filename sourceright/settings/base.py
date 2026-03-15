@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.invoices",
     "apps.organizations",
     "apps.vendors",
+    "apps.dashboard",
     "apps.healthcheck",
 ]
 
@@ -203,6 +204,7 @@ ORG_CONTEXT_EXEMPT_PATHS = [
     "/api/accounts/login",
     "/api/accounts/token/refresh",
     "/api/accounts/logout",
+    "/api/dashboard/me",
     "/api/schema",
     "/api/docs",
 ]

@@ -184,14 +184,29 @@ def login_view(request):
 
 @extend_schema(
     summary="Refresh access token",
-    description="Exchange a refresh token for a new access_token. Accepts refresh or refresh_token.",
-    responses={200: {"type": "object", "properties": {"access_token": {"type": "string"}}}},
+    description=(
+        "Exchange a refresh token for a new access_token. No Authorization header required "
+        "(call this when the access token is expired). Accepts refresh or refresh_token in the body."
+    ),
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "access_token": {"type": "string"},
+                "refresh_token": {"type": "string"},
+            },
+        }
+    },
 )
 class RefreshTokenView(TokenRefreshView):
-    """Refresh access token. Accepts refresh or refresh_token, returns access_token."""
+    """
+    Refresh access token using only the refresh token in the request body.
+    Does not require (and must not require) the access token, since this is
+    called when the access token has expired.
+    """
 
     authentication_classes = []
-    permission_classes = []
+    permission_classes = [AllowAny]
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get("data", self.request.data)
@@ -211,6 +226,7 @@ class RefreshTokenView(TokenRefreshView):
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200 and "access" in response.data:
             response.data["access_token"] = response.data.pop("access")
+            response.data["refresh_token"] = refresh
         return response
 
 
